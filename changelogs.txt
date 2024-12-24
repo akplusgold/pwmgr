@@ -1,0 +1,250 @@
+
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃                     Version 3.0.1 (07/24/2024)                     ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+     * This version is still undergoing testing, so if you run into 
+       any major bugs, feel free to use v2.6.1 from the releases section 
+
+
+                          Bug Fixes & Optimization
+                          ━━━━━━━━━━━━━━━━━━━━━━━━
+
+    [x] Fixed a critical bug related to libc path detection (for memory wipe functionality),
+          which was not working properly under Ubuntu Linux
+
+    [x] Fixed a bug related to duplicate namespace usage when a module is
+             imported under a different name while default name is still present
+                 (datetime module @ database_pwmgr)
+
+          * This is allowed in Python, but is not a good practice &
+                could be prone to future errors
+
+    [x] Help text has been updated, some of the commands have undergone changes. 
+           Please check it out for more information.
+
+
+    [x] load_database() and load_database_key() functions have been merged,
+           and all of them including write_encrypted_database() has been
+           completely rewritten from scratch reducing code complexity,
+           as well as code size by roughly 200-300 lines of code
+
+
+                               New Features
+                               ━━━━━━━━━━━━
+
+    [x] User Interface Upgrades:
+
+         [x] Upgraded the interface so that yes/no styled questions are reduced to a single keystroke
+
+         [x] Pw generation UI has been upgraded with auto resizing when buttons are pressed
+
+         [x] Common functions such as add, edit, reset-pw, etc. interfaces have undergone some minor changes
+
+         [x] Show commands now display pw complexity without having to run audit function
+
+    [x] Security Upgrades:
+
+         [x] Audit metrics 
+
+                  PW complexity has been updated to provide more accurate prediction,
+                    one that aligns with real world scenarios
+
+                    *  The default is set to 15+ for excellent and 21+ for superb.
+                          It now uses a more fine tuned, non linear grid, which is much more 
+                             accurate and penalizes bad passwords more.
+
+                      PW age auditing metrics have been updated so that it has more effect on high ratings 
+                           if they have not been changed in a long time
+
+         [x] Keyfile generation algorithm is coded from scratch using native Python instead of relying on dd utility.
+
+         [x] TPM key scrambling has been implemented using a temporary key.
+
+                * We have tpm key expiration, but we don't want anyone to be able to directly grab key out of tpm and use it
+
+         [x] File format has been upgraded. Now it properly handles errors,
+	 	      therefore reducing attack surface from local exploits
+
+    [x] Added an automatic installation script for Ubuntu, Arch Linux & Manjaro distributions
+
+          * If you're using any of the supported distributions, just cloning the project &
+              running the setup script should be enough. Please note that it has
+               not been thoroughly tested yet, so there maybe some bugs. Take a
+                 look at the documentation section on how to install manually.
+
+         [x] This setup script has built in hashing mechanism, to determine whether
+                 integrity of any of the modules have been compromised
+
+             * From now on, every release will have it's own set of hashes 
+                   which you also can manually verify
+
+
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃                      Version 2.6.1 (06/16/2023)                    ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+        Major Bug fixes:
+        ----------------
+
+            * After the memory wipe upgrade (>= 2.3.x), purpose of some functions changed, 
+                   others got renamed to different ones, so that's the cause for all of these issues listed below:
+
+            [x] PW Audit fn was using encrypted password field instead of real password, 
+                  so that means whatever audit you did in previous versions (>= 2.3.x) was incorrect, now that has been fixed.
+
+            [x]   Surprisingly show summary (-o) function was leaking password information, that also has been fixed
+
+
+        Other improvements:
+        -------------------
+
+            [x] Audit function upgrade (audit)
+
+                     Now it only displays records that have average, weak or critical security rating. 
+
+                        If you would like to see audit of all records, you can pass 'show-all' as the 2nd parameter. 
+                          
+                        Also please note that audit function doesn't have memory wipe feature at this time, 
+                           therefore use it sparingly, only when you need it.
+
+
+            [x] Show function upgrade
+
+                   [x] Theme#66
+
+                       [x] Now the PW field only displays color codes based on password complexity, instead of security rating. 
+                              Security ratings can change due to password being reused, last modified timestamp, etc therefore we do not
+                               want to display inaccurate information 
+                            
+                       [x] Last modified fields values are now calculated dynamically, therefore more accurate than previous versions
+
+                       [x] Show index function (-o) now supports Theme#66 & color coded audit attributes
+
+                       
+                   [x]  Terminal echo has been disabled, therefore, no accidental keypresses will be displayed on screen for show function (-O)
+
+                   [x]   Align text in center (vertically) when using show function (-O)
+
+
+            [x] Font stuff
+
+                [x] Config restrictions related to font type (for searchbar) have been removed
+
+                [x] '--search-font' function
+
+                    * Even if the right fonts are installed, if it's not specified correctly in config, 
+                        it won't get loaded in search bar. Therefore, this function allows you to figure out 
+                            what the font name needs to be.
+
+
+            [x] Edit function upgrade (-e)
+
+                   [x] Indentation issues after a field gets edited, have been fixed
+
+
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃                      Version 2.6.0 (06/05/2023)                    ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+    [x] 1 new theme (theme#66)
+
+        * With this theme if you use the show function (-O), it'll color code
+          the password and last modified field base on
+          relevant audit attributes.
+
+          If a record has not been audited, there will not be any colors displayed,
+            therefore make sure that you run the audit function first.
+
+    [x] For some reason audit attribute were not getting saved, that has now been fixed
+
+    [x] With introduction of sec memory feature, the last modified attribute wasn't getting
+            updated after you used edit function, that has now been fixed
+
+    [x] Removed unnecessary exception handling code for memory wipe
+
+
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃                      Version 2.4.0 (05/29/2023)                    ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+     [x] Code audits were made through open source static code analysis software
+         such as prospector, pylint, etc. as a result a lot of unused variables, 
+         functions, imports, etc. were removed, indentation as well as other exception 
+         handling issues were fixed, leading to a much more stable code base
+
+     [x] Edit function upgrade
+
+            [x] Now integrated with secure memory wipe feature
+            [x] Colors from theme are now displayed for header fields
+
+     [x] Removed database migration options from 'pass unix pwmgr' as we have import-csv function
+
+
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃                      Version 2.3.0 (04/26/2023)                    ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+    
+     [x] Secure memory wipe upgrade (need to install glibc package, checkout installation section in guide)
+
+          * When copying password to clipboard or displaying a record, that was the only 
+             scenario where we decrypted password in memory. It was not possible to 
+             overwrite memory section in python as it doesn't allow direct memory access. 
+
+              Now we have designed a custom class which interfaces with c at a lower level allowing us to 
+              securely wipe off memory, therefore reducing potential attack surface. This upgrade ensures 
+              that no passwords are leaked through memory by any means when the following functions are called:
+
+                   [x] Copying password to clipboard (-c, -C)
+
+                   [x] Displaying passwords for one more records (-o, -O)
+
+     [x] Theme upgrades
+
+           * Now every theme has a bolder color for the show function (-o, -O),
+              this improves the overall contrast, therefore increasing readability
+
+
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃                      Version 2.1.1 (03/01/2023)                    ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+     [x] Copy to clipboard function still had issues with quoted text, it has been fixed. 
+
+     [x] Upgrade help text
+
+     [x] Upgrade import-csv function with more options
+
+              - Site, PW
+              - Site, PW, Username, Email
+              - Site, PW, Username, Email, Notes
+
+     [x] Automatic text adjustment due to screen resizing when using:
+
+         [x] Show command '-O'
+         [x] Password generator function standalone
+         [x] Password generator function in add function
+
+     [x] Show index function should be upgraded so that 
+         when displaying headers it matches the theme instead of all yellow :/
+
+         [x] Field header should have foreground color of the theme 
+
+         [x] Remove borders in show index function with thin lines of '-',
+              makes it look cleaner
+
+     [x] Fix all known bugs 
+
+         [x] Searching using -O & if chosen value doesn't exist it needs
+              to quit with an exit status of 1 (catch ValueError) 
+
+         [x] Show index function needs to be upgraded so that they can
+
+              [x] Display characters 100+
+              [x] Have dynamic resizing of multiline text
+
+         [x] Have the ability to use quotations as part of password field
+              For this to work copy to clipboard function needs to have 
+              proper escape characters
+
+
