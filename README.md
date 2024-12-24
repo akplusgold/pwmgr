@@ -23,7 +23,7 @@ An Open Source Password Manager for Linux
 </br>
 </br>
 
-#### Installation (Step#1)
+####                        Installation (Step#1)
 
 Ubuntu:
 ```
@@ -39,7 +39,9 @@ Manjaro / Arch Linux:
 
 ```
 
-#### Installation (Step#2)
+</br>
+
+####                        Installation (Step#2)
 
 Python Dependencies
 
