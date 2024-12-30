@@ -1,27 +1,24 @@
 #!/usr/bin/python3
 from        time import sleep
-from        getch import getch
 from        hashlib import sha256
 from        getpass import getpass
 from        database_pwmgr import ManageRecord,\
                  Record, AllocateSecureMemory
-import    csv, math, os
-import    subprocess
-import    random
-import    base64  
-import    sys
-from  database_pwmgr import \
-     SecureClipboardCopyFailedException,InvalidParameterException,\
+import    csv, math, random
+import    subprocess, sys, os
+import    termios, tty, base64
+from        database_pwmgr import \
+    SecureClipboardCopyFailedException,InvalidParameterException,\
    IncorrectPasswordException,IntegrityCheckFailedException,IncorrectKeyException,\
- UnsupportedFileFormatException,NoKeyFoundException,DataCorruptedException
+  UnsupportedFileFormatException,NoKeyFoundException,DataCorruptedException
 
 
 global __app, __author, __updated__, __current_revision__
 
 __app__              = 'Password Manager'
 __author__           = 'Zubair Hossain'
-__last_updated__     = '07/24/2024'
-__current_revision__ = '3.0.1'
+__last_updated__     = '11/28/2024'
+__current_revision__ = '3.1.0'
 
 
 #$$$$━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$
@@ -29,7 +26,9 @@ global term_len_h,term_len_v,config_file,db_file_path,\
   config,term_bar_color,app_name,file_name,db_handler, \
  theme_number,theme,field_color_fg,password_in_keyring#/
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━/
-#////////////////////////
+#////////////////////////////
+term_len_v=30;term_len_h=70;
+password_in_keyring = False
 theme='';theme_number=1 
 file_name= 'db.enc'
 app_name = 'pwmgr'
@@ -40,23 +39,6 @@ db_file_path=''
 field_color_fg=''
 term_bar_color=''
 
-
-global lcase,\
-char_set_complete,\
-symbol,ucase,number
-symbol= "<!$%?+@*^&#>"
-ucase=  "AMBYNZCODPEQFRGSHTIUJVKWLX"
-lcase=   "ambynzcodpeqfrgshtiujvkwlx"
-number= "0123456789"
-char_set_complete=\
-symbol+lcase+\
-ucase+\
-number 
-
-
-term_len_v = 30;
-term_len_h = 70;
-password_in_keyring = False
 
 
 '''
@@ -75,26 +57,26 @@ password_in_keyring = False
 
       Clipboard Functions            1771
       Secure Printing Functions      1871
-      Advanced Printing Functions    2570
-      Keyfile & Keyring Functions    2845
+      Advanced Printing Functions    2514
+      Keyfile & Keyring Functions    2801
 
 
                 Uncategorized
 
-      Utility Functions              3385
-      Search Bar                     3605
+      Utility Functions              3424
+      Search Bar                     3626
       Database RW                    3761
 
 
                      IO
 
-      File IO Functions              4047
-      Import / Export Functions      4185
-      Gui Functions                  4414
-      Help Text                      4501
-      Terminal & Printing Functions  4755
-      User Input & Related           5061
-      Password Generator Functions   5591
+      File IO Functions              4085
+      Import / Export Functions      4241
+      Gui Functions                  4463
+      Help Text                      4524
+      Terminal & Printing Functions  4807
+      User Input & Related           5121
+      Password Generator Functions   5471
 
 '''
 
@@ -123,16 +105,6 @@ def parse_args():
         sys.exit(0)
 
     else:
-
-        if (check_if_prog_exists(['keyctl'])[0] == False):
-            print(text_error('The program keyctl was not found. It is required to store & manage keys on a system running systemd'))
-            sys.exit(1)
-        elif (check_if_prog_exists(['xclip'])[0] == False):
-            print(text_error('The program xclip was not found. It is required to use clipboard functionality'))
-            sys.exit(1)
-        elif (check_if_prog_exists(['dmenu'])[0] == False):
-            print(text_error('The program dmenu was not found. It is required to use the search bar functionality'))
-            sys.exit(1)
 
         config = {}
 
@@ -616,6 +588,19 @@ def config_pwmgr():
         config = load_config(config_file)
         validate_config() 
         write_config(config, config_file)
+
+    ## Update 11/2024: securing config dir permissions
+    if (not check_perm(c_dir, 7, 0, 0)):
+        ## If executable bit is not set on dir, we cannot read files
+        set_perm(c_dir, 7, 0, 0)
+
+    temp_key_dir = '/home/%s/.config/pwmgr/tmp' % (os.getlogin())
+
+    if (not os.path.isdir(temp_key_dir)):
+        os.makedirs(temp_key_dir)
+
+    if (not check_perm(temp_key_dir, 7, 0, 0)):
+        set_perm(temp_key_dir, 7, 0, 0)
 
 
 def validate_config():
@@ -2256,8 +2241,6 @@ def display_row_static_with_sec_mem(field_list=[], data_list=[], index=None, hea
         print(text_error('Terminal size too small to display data'))
         sys.exit(1)
 
-    theme_num = config.get('theme')
-
     if (not global_value_initialized(theme)):
         theme = ''
 
@@ -2525,6 +2508,9 @@ def display_row_static_with_sec_mem(field_list=[], data_list=[], index=None, hea
 def color_menu_column_header(header_list=[], left_indent=7):
 
     global term_len_h, theme
+
+    if (not global_value_initialized(term_len_h)):
+        term_len_h = 70
 
     if (not global_value_initialized(theme)):
         theme = ''
@@ -2843,9 +2829,12 @@ def keyfile_load(fp=''):
 
 def keyfile_write(fp='', num_bytes=1000):
 
-    initialize_charset()
+    symbol= "<!$%?+@*^&#>"
+    ucase=  "AMBYNZCODPEQFRGSHTIUJVKWLX"
+    number= "0123456789"
+    lcase=  "ambynzcodpeqfrgshtiujvkwlx"
 
-    global lcase, symbol, ucase, number, char_set_complete
+    char_set_complete= symbol+ucase+number+lcase
 
     random.seed()
 
@@ -3118,6 +3107,12 @@ def remove_keyfile():
 
     global db_handler, config, config_file, db_file_path 
 
+    if (not (global_value_initialized(config) and \
+             global_value_initialized(config_file) and \
+             global_value_initialized(db_file_path)):
+        raise GlobalValueNotInitializedException('remove_keyfile(): ' + \
+             'config, config_file & db_file_path values need to be set')
+
     cursor_hide()
     clear_screen()
     print_block(1)
@@ -3180,6 +3175,10 @@ def keyring_get():
 
     global app_name
 
+    if (not global_value_initialized(app_name)):
+        raise GlobalValueNotInitializedException('keyring_get(): ' + \
+             'app_name needs to be set')
+
     key_id, stderr, _ = run_cmd('keyctl request user %s' % (app_name))
 
     if (stderr):
@@ -3202,11 +3201,16 @@ def keyring_set(value):
 
     global app_name
 
+    if (not global_value_initialized(app_name)):
+        raise GlobalValueNotInitializedException('keyring_set(): ' + \
+             'app_name needs to be set')
+
     _, stderr, _ = run_cmd('keyctl add user %s %s @u' % (app_name, value))
 
     if (stderr):
         return False
 
+    keyring_set_expiration()
     return True
 
 
@@ -3236,7 +3240,6 @@ def keyring_set_scrambled(value):
             return False
 
         keyring_set(scrambled_key)
-
         return True
 
     else:
@@ -3362,6 +3365,10 @@ def keyring_reset():
 
     global app_name
 
+    if (not global_value_initialized(app_name)):
+        raise GlobalValueNotInitializedException('keyring_reset(): ' + \
+             'app_name need to be set')
+
     stdout, _, _ = run_cmd('keyctl purge -s user %s' % app_name)
 
     output = stdout.strip().split(' ')[1]
@@ -3377,6 +3384,10 @@ def keyring_reset():
 def keyring_set_expiration():
 
     global config, app_name
+
+    if (not (global_value_initialized(config) or global_value_initialized(app_name))):
+        raise GlobalValueNotInitializedException('keyring_set_expiration(): ' + \
+             'config or app_name values need to be set')
 
     t = config.get('keyring_wipe_interval')
 
@@ -3776,14 +3787,10 @@ def check_database():
 
     result = True
 
-    if (keyfile_path != ''):
-
-        val = check_files([keyfile_path])
-
-        if (not val):
-            msg = 'Keyfile not found in %s' % keyfile_path
-            print(text_error(msg))
-            sys.exit(1)
+    if (keyfile_path != '' and not os.path.isfile(keyfile_path)):
+        msg = 'Keyfile not found in %s' % keyfile_path
+        print(text_error(msg))
+        sys.exit(1)
 
     if (os.path.isfile(db_file_path) == False):
         # No database found
@@ -3814,13 +3821,7 @@ def check_database():
 
             pw_master = generate_pass_single(32)
 
-            if (keyring_set_scrambled(db_handler.get_key()) == False):
-                print(text_error("check_database(): error#01 Unable to store password in keyring"))
-                sys.exit(1)
-
-            if (keyring_set_scrambled(db_handler.get_key())):
-                keyring_set_expiration()
-            else:
+            if (not keyring_set_scrambled(db_handler.get_key())):
 
                 if (lib_gui_available):
                     gui_msg("Unable to store password in keyring, do you have keyctl installed?")
@@ -3947,9 +3948,7 @@ def check_database():
 
             ## TODO: option in config to disable key scrambling if its buggy
             if (password_in_keyring == False):
-                if (keyring_set_scrambled(db_handler.get_key())):
-                    keyring_set_expiration()
-                else:
+                if (not keyring_set_scrambled(db_handler.get_key())):
                     if (lib_gui_available):
                         gui_msg("Unable to store password in keyring, do you have keyctl installed?")
                     else:
@@ -4200,6 +4199,36 @@ def remove_all_elements_from_list(l=[], element_l=[], \
         _l = [x for x in _l if x.endswith(item) != True]
 
     return _l
+
+
+def check_perm(fp='', user=6, group=0, other=0):
+
+    if (os.path.isfile(fp) or os.path.isdir(fp)):
+
+        perm = oct(os.stat(fp).st_mode)
+
+        #print("user: %d, group: %d, other: %d\n" % (int(perm[-3]), int(perm[-2]), int(perm[-1])))
+ 
+        if (int(perm[-3]) == user and \
+            int(perm[-2]) == group and \
+            int(perm[-1]) == other):
+
+            return True
+
+    return False
+
+
+def set_perm(fp='', user=6, group=0, other=0):
+
+    if (not (user  >= 0 and user  <= 7 and \
+             group >= 0 and group <= 7 and \
+             other >= 0 and other <= 7)):
+
+        raise InvalidParameterException('set_perm(): parameters user, group, other ' + \
+                                        'has to be' + 'in range >=0 and <= 7')
+
+    if (os.path.isfile(fp) or os.path.isdir(fp)):
+        run_cmd('chmod %d%d%d "%s"' % (user, group, other, fp))
 
 
 '''
@@ -4568,7 +4597,7 @@ def print_help():
         %s     displays a brief summary of the entire database
 
         %s* Multiple comma separated values can also be passed
-        %s     e.g: '%spwmgr -o %s1,2,3'%s
+        %s     e.g: '%spwmgr show %s1,2,3'%s
 
 
     %sshow-latest%s
@@ -4592,7 +4621,7 @@ def print_help():
         %sRemove an entry from database
 
         %s* This command can remove multiple entries
-             e.g: '%spwmgr -d %s55,48'%s
+             e.g: '%spwmgr remove %s55,48'%s
 
 
     %skeyring-clear%s
@@ -5358,7 +5387,7 @@ def prompt_yes_no_instant(question="", default=True, \
 
             print()
 
-            if (char == '\n'):
+            if (char == '\r' or char == '\n'):
                 return default
             elif (char == 'y'):
                 return True
@@ -5400,32 +5429,41 @@ def prompt_yes_no_blank(question=""):
             print(text_error("Invalid answer. Please answer 'yes/no' or leave blank"))
 
 
+def get_term_settings():
+    return termios.tcgetattr(0)
+
+
+def setcbreak():
+    tty.setcbreak(0)
+
+
+def setraw():
+    ## No echo
+    tty.setraw(0)
+
+
+def restore_term_settings(term_settings=''):
+    termios.tcsetattr(0, termios.TCSANOW, term_settings)
+
+
+def get_char(): 
+    ## Need to configure term settings manually
+    return ord(sys.stdin.read(1))
+
+
+def getch(): 
+    original_settings = get_term_settings()
+    setraw()
+    c = sys.stdin.read(1)
+    restore_term_settings(original_settings)
+    return c
+
+
 '''
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃   PW Generator Functions                                           ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 '''
-
-def initialize_charset():
-
-    global symbol, ucase, number, lcase
-
-    if (not global_value_initialized(symbol) and \
-            global_value_initialized(ucase)  and \
-            global_value_initialized(number) and \
-            global_value_initialized(lcase)):
-
-        ## Original, got replaced by opt
-        #symbol  = "<:()|;{}!@#%^&+_*,/-\\][$?>"
-        #ucase   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        #number  = "0123456789"
-        #lcase   = "abcdefghijklmnopqrstuvwxyz"
-
-        lcase    = "ambynzcodpeqfrgshtiujvkwlx"
-        symbol   = "!@#$<%?^&+*>:"
-        ucase    = "AMBYNZCODPEQFRGSHTIUJVKWLX"
-        number   = "0123456789"
-
 
 def generate_pass(length=10):
 
@@ -5582,10 +5620,12 @@ def generate_pass(length=10):
     #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     '''
 
-    initialize_charset()
+    symbol= "<!$%?+@*^&#>"
+    ucase=  "AMBYNZCODPEQFRGSHTIUJVKWLX"
+    number= "0123456789"
+    lcase=  "ambynzcodpeqfrgshtiujvkwlx"
 
-    global lcase, symbol, ucase, number, char_set_complete
-
+    char_set_complete= symbol+ucase+number+lcase
 
     '''
     Legend:
@@ -5791,7 +5831,6 @@ def menu_generate_password_standalone(called_by_add_fn=False):
         header_text_color = '\x1B[1;38;5;233m' + '\x1B[1;48;5;39m'
         pw_field_color    = '\x1B[1;48;5;233m\x1B[1;38;5;214m'
 
-
     term_len_var_h = term_len_h
     term_len_var_v = term_len_v
 
@@ -5902,6 +5941,11 @@ def menu_generate_password_standalone(called_by_add_fn=False):
 
     if (called_by_add_fn):
         return pwd
+
+
+class GlobalValueNotInitializedException(Exception):
+    def __init__(self, msg='Need to initialize global variables before accessing'):
+        super().__init__(msg)
 
 
 def main():

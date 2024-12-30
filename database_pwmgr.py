@@ -14,7 +14,7 @@ global __app, __author, __last_updated__, __current_revision__
 __app__              = 'Database @PWMGR'
 __author__           = 'Zubair Hossain'
 __last_updated__     = '07/24/2024'
-__current_revision__ = '3.0.1'
+__current_revision__ = '3.1.0'
 
 
 """
@@ -2561,43 +2561,42 @@ class AllocateSecureMemory():
 
 class IncorrectKeyException(Exception):
     def __init__(self, msg="Decryption of database failed due to incorrect key"):
-        super(IncorrectKeyException, self).__init__(msg)
+        super().__init__(msg)
 
 class IncorrectPasswordException(Exception):
     def __init__(self, msg="Decryption of database failed as password is incorrect"):
-        super(IncorrectPasswordException, self).__init__(msg)
+        super().__init__(msg)
 
 class IntegrityCheckFailedException(Exception):
     def __init__(self, msg="Database file potentially corrupted"):
-        super(IntegrityCheckFailedException, self).__init__(msg)
+        super().__init__(msg)
 
 class InvalidParameterException(Exception):
     def __init__(self, msg="The input parameter is not valid"):
-        super(InvalidParameterException, self).__init__(msg)
+        super().__init__(msg)
 
 class DataCorruptedException(Exception):
-    def __init__(self, msg="Unable to decode unicode chars, " + \
-                            "database file is corrupted"):
-        super(DataCorruptedException, self).__init__(msg)
+    def __init__(self, msg="Unable to decode unicode chars, database file is corrupted"):
+        super().__init__(msg)
 
 class KeyFileInvalidException(Exception):
     def __init__(self, msg="Keyfile is invalid, need to use a minimum of 1000 byte key"):
-        super(KeyFileInvalidException, self).__init__(msg)
+        super().__init__(msg)
 
 class NoKeyFoundException(Exception):
     def __init__(self, msg="Key doesn't exist"):
-        super(NoKeyFoundException, self).__init__(msg)
+        super().__init__(msg)
 
 class UnsupportedFileFormatException(Exception):
     def __init__(self, msg="Unsupported file format detected"):
-        super(UnsupportedFileFormatException, self).__init__(msg)
+        super().__init__(msg)
 
 class MemoryAllocationFailedException(Exception):
     def __init__(self, msg='Unable to acquire sufficient memory'):
-        super(MemoryAllocationFailedException, self).__init__(msg)
+        super().__init__(msg)
 
 class SecureClipboardCopyFailedException(Exception):
     def __init__(self, msg='Unable to copy data using secure method'):
-        super(SecureClipboardCopyFailedException, self).__init__(msg)
+        super().__init__(msg)
 
 
