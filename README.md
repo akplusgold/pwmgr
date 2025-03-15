@@ -46,7 +46,7 @@ Manjaro / Arch Linux:
 Python Dependencies
 
 ```
-  pip3 install --user --break-system-packages getch fernet
+  pip3 install --user --break-system-packages getch cryptography 
 ```
 
 </br>
